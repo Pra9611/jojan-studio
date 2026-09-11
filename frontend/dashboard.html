@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - The Jojan</title>
+    <!-- 1. Icon path fixed -->
+    <link rel="icon" href="assets/logo.jpeg">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app" id="app-shell">
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <!-- 2. Sidebar logo path fixed -->
+                <img src="assets/logo.jpeg" alt="Logo">
+                <div><div class="name">THE JOJAN</div><div class="sub">MENS DESIGNER STUDIO</div></div>
+            </div>
+            <ul class="nav">
+                <li><a href="dashboard.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+                <li><a href="add-customer.html"><i data-lucide="user-plus"></i> Add Customer</a></li>
+                <li><a href="customer-list.html"><i data-lucide="users"></i> Customer List</a></li>
+                <li><a href="measurements.html"><i data-lucide="ruler"></i> Measurements</a></li>
+                <li><a href="export-excel.html"><i data-lucide="file-spreadsheet"></i> Export Excel</a></li>
+                <li><a href="settings.html"><i data-lucide="settings"></i> Settings</a></li>
+            </ul>
+            <a href="#" class="logout-link js-logout"><span class="icon">🚪</span> Logout</a>
+        </div>
+
+        <div class="main">
+            <div class="topbar">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="mobile-topbar-btn" id="mobile-menu-btn">☰</button>
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Welcome back! Here's your store overview.</p>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-chip">📅 <span id="topbar-date"></span></div>
+                    <div class="admin-chip">
+                        <div class="admin-avatar" id="admin-initial">A</div>
+                        <div>
+                            <div id="admin-name" style="font-weight:600;">Admin</div>
+                            <div id="admin-shop" style="font-size:11px; color: var(--text-dim);">The Jojan</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-label">Total Customers</div>
+                    <div class="stat-value" id="stat-total-customers">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-label">Today's Orders</div>
+                    <div class="stat-value" id="stat-todays-orders">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📐</div>
+                    <div class="stat-label">Measurements Saved</div>
+                    <div class="stat-value" id="stat-measurements">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📑</div>
+                    <div class="stat-label">Recent Customers</div>
+                    <div class="stat-value" id="stat-recent-count">--</div>
+                </div>
+            </div>
+
+            <div class="banner">
+                <div class="banner-content">
+                    <!-- Logo Section -->
+                    <div class="banner-brand">
+                        <img src="assets/logo.jpeg" alt="The Jojan Logo" class="banner-logo">
+                        <div class="brand-text">
+                            <h2>THE JOJAN</h2>
+                            <p class="sub">MENS DESIGNER STUDIO</p>
+                            <p class="tag">Perfect Fit. Always.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Owner / Model Photo Section -->
+                    <div class="banner-profile">
+                        <img src="assets/photo.jpeg" alt="Pramod Jojan" class="owner-photo">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:20px;">
+                <h2>Recent Customers</h2>
+                <p class="desc">The last 5 customers added to your store</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Name</th><th>Mobile</th><th>Date Added</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="recent-customers-body">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="footer-features">
+                <div class="feature">
+                    <div class="fi">⚡</div>
+                    <div><b>Easy Customer Management</b><span>Add, search and update customer details</span></div>
+                </div>
+                <div class="feature">
+                    <div class="fi">⭐</div>
+                    <div><b>Accurate Measurements</b><span>Save all shirt &amp; pant measurements</span></div>
+                </div>
+                <div class="feature">
+                    <div class="fi">📊</div>
+                    <div><b>Excel Export</b><span>One click download to Excel</span></div>
+                </div>
+                <div class="feature">
+                    <div class="fi">📱</div>
+                    <div><b>Mobile Friendly</b><span>Use on any device, anytime</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        async function loadDashboard() {
+            try {
+                const data = await apiGet("/api/dashboard");
+                document.getElementById("stat-total-customers").textContent = data.total_customers;
+                document.getElementById("stat-todays-orders").textContent = data.todays_orders;
+                document.getElementById("stat-measurements").textContent = data.measurements_saved;
+                document.getElementById("stat-recent-count").textContent = data.recent_customers.length;
+
+                const tbody = document.getElementById("recent-customers-body");
+                if (data.recent_customers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No customers yet. Add your first customer!</td></tr>';
+                } else {
+                    tbody.innerHTML = data.recent_customers.map(c => `
+                        <tr>
+                            <td>${c.customer_code}</td>
+                            <td>${escapeHtml(c.name)}</td>
+                            <td>${escapeHtml(c.mobile)}</td>
+                            <td>${formatDate(c.date_added)}</td>
+                            <td><a href="/customer-details.html?id=${c.id}" class="icon-btn">View 👁️</a></td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return "";
+            return str.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]);
+        }
+
+        loadDashboard();
+    </script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

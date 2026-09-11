@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer List - The Jojan</title>
+<link rel="icon" href="/assets/logo.jpeg">
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="app" id="app-shell">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="assets/logo.jpeg" alt="Logo">
+        <div>
+            <div class="name">THE JOJAN</div>
+            <div class="sub">MENS DESIGNER STUDIO</div>
+        </div>
+    </div>
+    
+    <ul class="nav">
+        <li><a href="dashboard.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="add-customer.html"><i data-lucide="user-plus"></i> Add Customer</a></li>
+        <li><a href="customer-list.html"><i data-lucide="users"></i> Customer List</a></li>
+        <li><a href="measurements.html"><i data-lucide="ruler"></i> Measurements</a></li>
+        <li><a href="export-excel.html"><i data-lucide="file-spreadsheet"></i> Export Excel</a></li>
+        <li><a href="settings.html"><i data-lucide="settings"></i> Settings</a></li>
+    </ul>
+
+    <a href="#" class="logout-link js-logout">
+        <span class="icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </span> 
+        Logout
+    </a>
+</div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="mobile-topbar-btn" id="mobile-menu-btn">☰</button>
+        <div><h1>Customer List</h1></div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-chip">📅 <span id="topbar-date"></span></div>
+        <div class="admin-chip">
+          <div class="admin-avatar" id="admin-initial">A</div>
+          <div><div id="admin-name" style="font-weight:600;">Admin</div><div id="admin-shop" style="font-size:11px; color: var(--text-dim);">The Jojan</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>All Customers</h2>
+      <p class="desc">Manage and view all your customers.</p>
+
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Search by name, mobile or ID...">
+        <button class="btn btn-dark" id="search-btn">🔍 Search</button>
+        <a href="/export-excel.html" class="btn btn-green">📊 Export Excel</a>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Name</th><th>Mobile</th><th>Date Added</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="customers-body">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-dim);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <div id="showing-text">Showing 0 of 0 customers</div>
+        <div class="pages" id="pages-container"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <h3>Delete Customer?</h3>
+    <p style="color:var(--text-dim);">This will permanently delete this customer and all their saved measurements. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-dark" id="cancel-delete">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+  const PAGE_SIZE = 6;
+  let allCustomers = [];
+  let currentPage = 1;
+  let pendingDeleteId = null;
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[m]));
+  }
+
+  async function loadCustomers(search = "") {
+    try {
+      const query = search ? `?search=${encodeURIComponent(search)}` : "";
+      allCustomers = await apiGet("/api/customers" + query);
+      currentPage = 1;
+      renderPage();
+    } catch (e) {
+      showToast(e.message, true);
+    }
+  }
+
+  function renderPage() {
+    const tbody = document.getElementById("customers-body");
+    const totalPages = Math.max(1, Math.ceil(allCustomers.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    if (allCustomers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No customers found.</td></tr>';
+      document.getElementById("showing-text").textContent = "Showing 0 of 0 customers";
+      document.getElementById("pages-container").innerHTML = "";
+      return;
+    }
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = allCustomers.slice(start, start + PAGE_SIZE);
+
+    tbody.innerHTML = pageItems.map(c => `
+      <tr>
+        <td>${c.customer_code}</td>
+        <td>${escapeHtml(c.name)}</td>
+        <td>${escapeHtml(c.mobile)}</td>
+        <td>${formatDate(c.date_added)}</td>
+        <td>
+          <a href="/customer-details.html?id=${c.id}" class="icon-btn" title="View">👁️</a>
+          <a href="/customer-details.html?id=${c.id}&edit=1" class="icon-btn" title="Edit">✏️</a>
+          <button class="icon-btn danger" title="Delete" onclick="askDelete(${c.id})">🗑️</button>
+        </td>
+      </tr>
+    `).join("");
+
+    document.getElementById("showing-text").textContent =
+      `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, allCustomers.length)} of ${allCustomers.length} customers`;
+
+    const pagesContainer = document.getElementById("pages-container");
+    let html = "";
+    for (let i = 1; i <= totalPages; i++) {
+      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    pagesContainer.innerHTML = html;
+  }
+
+  function goToPage(p) {
+    currentPage = p;
+    renderPage();
+  }
+
+  function askDelete(id) {
+    pendingDeleteId = id;
+    document.getElementById("delete-modal").style.display = "flex";
+  }
+
+  document.getElementById("cancel-delete").addEventListener("click", () => {
+    document.getElementById("delete-modal").style.display = "none";
+    pendingDeleteId = null;
+  });
+
+  document.getElementById("confirm-delete").addEventListener("click", async () => {
+    if (!pendingDeleteId) return;
+    try {
+      await apiDelete(`/api/customers/${pendingDeleteId}`);
+      showToast("Customer deleted");
+      document.getElementById("delete-modal").style.display = "none";
+      loadCustomers(document.getElementById("search-input").value.trim());
+    } catch (e) {
+      showToast(e.message, true);
+    }
+  });
+
+  document.getElementById("search-btn").addEventListener("click", () => {
+    loadCustomers(document.getElementById("search-input").value.trim());
+  });
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadCustomers(e.target.value.trim());
+  });
+
+  loadCustomers();
+</script>
+<script>
+    lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings - The Jojan</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="app" id="app-shell">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="/assets/logo.jpeg" alt="Logo">
+      <div><div class="name">THE JOJAN</div><div class="sub">MENS DESIGNER STUDIO</div></div>
+    </div>
+    <ul class="nav">
+        <li><a href="dashboard.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="add-customer.html"><i data-lucide="user-plus"></i> Add Customer</a></li>
+        <li><a href="customer-list.html"><i data-lucide="users"></i> Customer List</a></li>
+        <li><a href="measurements.html"><i data-lucide="ruler"></i> Measurements</a></li>
+        <li><a href="export-excel.html"><i data-lucide="file-spreadsheet"></i> Export Excel</a></li>
+        <li><a href="settings.html"><i data-lucide="settings"></i> Settings</a></li>
+    </ul>
+    <a href="#" class="logout-link js-logout"><span class="icon">↩</span> Logout</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="mobile-topbar-btn" id="mobile-menu-btn">☰</button>
+        <div><h1>Settings</h1></div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-chip">📅 <span id="topbar-date"></span></div>
+        <div class="admin-chip">
+          <div class="admin-avatar" id="admin-initial">A</div>
+          <div><div id="admin-name" style="font-weight:600;">Admin</div><div id="admin-shop" style="font-size:11px; color: var(--text-dim);">The Jojan</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col" style="grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <h2>Profile Settings</h2>
+        <p class="desc">Update your name and shop name.</p>
+        <div id="profile-success" class="success-msg"></div>
+        <div class="field"><label>Admin Display Name</label><input type="text" id="display-name"></div>
+        <div class="field"><label>Shop Name</label><input type="text" id="shop-name"></div>
+        <button class="btn btn-gold" id="save-profile-btn">💾 Save Profile</button>
+      </div>
+
+      <div class="card">
+        <h2>Change Password</h2>
+        <p class="desc">Update your account password.</p>
+        <div id="pwd-error" class="error-msg"></div>
+        <div id="pwd-success" class="success-msg"></div>
+        <div class="field"><label>Current Password</label><input type="password" id="current-password"></div>
+        <div class="field"><label>New Password</label><input type="password" id="new-password"></div>
+        <div class="field"><label>Confirm New Password</label><input type="password" id="confirm-password"></div>
+        <button class="btn btn-gold" id="save-password-btn">🔒 Update Password</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h2>About</h2>
+      <p class="desc">The Jojan — Mens Designer Studio Measurement System</p>
+      <div class="detail-row"><span>Version</span><span>1.0.0</span></div>
+      <div class="detail-row"><span>Tagline</span><span>Perfect Fit. Always.</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+  const user = getUser();
+  if (user) {
+    document.getElementById("display-name").value = user.display_name || "";
+    document.getElementById("shop-name").value = user.shop_name || "";
+  }
+
+  document.getElementById("save-profile-btn").addEventListener("click", async () => {
+    const display_name = document.getElementById("display-name").value.trim();
+    const shop_name = document.getElementById("shop-name").value.trim();
+    try {
+      const updated = await apiPut("/api/settings", { display_name, shop_name });
+      const u = getUser();
+      u.display_name = updated.display_name;
+      u.shop_name = updated.shop_name;
+      localStorage.setItem("jojan_user", JSON.stringify(u));
+      const successBox = document.getElementById("profile-success");
+      successBox.textContent = "Profile updated successfully.";
+      successBox.style.display = "block";
+      showToast("Profile updated");
+      document.getElementById("admin-name").textContent = updated.display_name;
+      document.getElementById("admin-shop").textContent = updated.shop_name;
+      document.getElementById("admin-initial").textContent = (updated.display_name || "A").charAt(0).toUpperCase();
+    } catch (e) {
+      showToast(e.message, true);
+    }
+  });
+
+  document.getElementById("save-password-btn").addEventListener("click", async () => {
+    const errorBox = document.getElementById("pwd-error");
+    const successBox = document.getElementById("pwd-success");
+    errorBox.style.display = "none";
+    successBox.style.display = "none";
+
+    const current_password = document.getElementById("current-password").value;
+    const new_password = document.getElementById("new-password").value;
+    const confirm_password = document.getElementById("confirm-password").value;
+
+    if (!current_password || !new_password) {
+      errorBox.textContent = "Please fill in all password fields.";
+      errorBox.style.display = "block";
+      return;
+    }
+    if (new_password !== confirm_password) {
+      errorBox.textContent = "New passwords do not match.";
+      errorBox.style.display = "block";
+      return;
+    }
+    if (new_password.length < 6) {
+      errorBox.textContent = "New password must be at least 6 characters.";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    try {
+      await apiPost("/api/settings/change-password", { current_password, new_password });
+      successBox.textContent = "Password updated successfully.";
+      successBox.style.display = "block";
+      showToast("Password updated");
+      document.getElementById("current-password").value = "";
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+    } catch (e) {
+      errorBox.textContent = e.message;
+      errorBox.style.display = "block";
+    }
+  });
+</script>
+<script>
+    lucide.createIcons();
+</script>
+</body>
+</html>

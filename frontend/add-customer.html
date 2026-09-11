@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Customer - The Jojan</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="app" id="app-shell">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="/assets/logo.svg" alt="Logo">
+      <div><div class="name">THE JOJAN</div><div class="sub">MENS DESIGNER STUDIO</div></div>
+    </div>
+    <ul class="nav">
+        <li><a href="dashboard.html" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a href="add-customer.html"><i data-lucide="user-plus"></i> Add Customer</a></li>
+        <li><a href="customer-list.html"><i data-lucide="users"></i> Customer List</a></li>
+        <li><a href="measurements.html"><i data-lucide="ruler"></i> Measurements</a></li>
+        <li><a href="export-excel.html"><i data-lucide="file-spreadsheet"></i> Export Excel</a></li>
+        <li><a href="settings.html"><i data-lucide="settings"></i> Settings</a></li>
+    </ul>
+    <a href="#" class="logout-link js-logout"><span class="icon">↩</span> Logout</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="mobile-topbar-btn" id="mobile-menu-btn">☰</button>
+        <div><h1>Add Customer</h1></div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-chip">📅 <span id="topbar-date"></span></div>
+        <div class="admin-chip">
+          <div class="admin-avatar" id="admin-initial">A</div>
+          <div><div id="admin-name" style="font-weight:600;">Admin</div><div id="admin-shop" style="font-size:11px; color: var(--text-dim);">The Jojan</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h2>Add New Customer</h2>
+        <p class="desc">Enter customer details to get started.</p>
+
+        <div id="error-box" class="error-msg"></div>
+        <div id="success-box" class="success-msg"></div>
+
+        <form id="customer-form">
+          <div class="form-grid cols-1">
+            <div class="field">
+              <label>Customer Name *</label>
+              <input type="text" id="name" placeholder="Enter customer name" required>
+            </div>
+            <div class="field">
+              <label>Mobile Number *</label>
+              <div class="mobile-input">
+                <span class="prefix">+91</span>
+                <input type="tel" id="mobile" placeholder="Enter mobile number" pattern="[0-9]{10}" maxlength="10" required>
+              </div>
+            </div>
+            <div class="field">
+              <label>Address (Optional)</label>
+              <textarea id="address" rows="3" placeholder="Enter address"></textarea>
+            </div>
+            <div class="field">
+              <label>Date *</label>
+              <input type="date" id="date_added" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-gold btn-block" id="save-btn" style="margin-top:8px;">💾 Save Customer</button>
+        </form>
+      </div>
+
+      <div class="side-note">
+        <h4>Customer ID</h4>
+        <div class="code" id="next-code">TJ------</div>
+        <p style="color:var(--text-dim); font-size:13px; margin-top:10px;">Customer ID will be generated automatically.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+  document.getElementById("date_added").value = todayISO();
+
+  async function loadNextCode() {
+    try {
+      const data = await apiGet("/api/customers/next-code");
+      document.getElementById("next-code").textContent = data.customer_code;
+    } catch (e) {}
+  }
+  loadNextCode();
+
+  const form = document.getElementById("customer-form");
+  const errorBox = document.getElementById("error-box");
+  const successBox = document.getElementById("success-box");
+  const saveBtn = document.getElementById("save-btn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.style.display = "none";
+    successBox.style.display = "none";
+
+    const name = document.getElementById("name").value.trim();
+    const mobile = document.getElementById("mobile").value.trim();
+    const address = document.getElementById("address").value.trim();
+    const date_added = document.getElementById("date_added").value;
+
+    if (!name || !mobile) {
+      errorBox.textContent = "Please fill in the required fields.";
+      errorBox.style.display = "block";
+      return;
+    }
+    if (!/^[0-9]{10}$/.test(mobile)) {
+      errorBox.textContent = "Please enter a valid 10-digit mobile number.";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+    try {
+      const customer = await apiPost("/api/customers", { name, mobile, address, date_added });
+      successBox.textContent = `Customer ${customer.customer_code} saved successfully!`;
+      successBox.style.display = "block";
+      showToast("Customer saved successfully");
+      form.reset();
+      document.getElementById("date_added").value = todayISO();
+      loadNextCode();
+      setTimeout(() => { window.location.href = `/customer-details.html?id=${customer.id}`; }, 900);
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.style.display = "block";
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save Customer";
+    }
+  });
+</script>
+<script>
+    lucide.createIcons();
+</script>
+</body>
+</html>

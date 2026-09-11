@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - The Jojan | Mens Designer Studio</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <img src="/assets/logo.jpeg" alt="The Jojan Logo" class="login-logo">
+      <div class="brand-title">THE JOJAN</div>
+      <div class="brand-sub">MENS DESIGNER STUDIO</div>
+      <div class="brand-tag">Perfect Fit. Always.</div>
+
+      <div id="error-box" class="error-msg"></div>
+
+      <form id="login-form">
+        <div class="field">
+          <label>Username / Mobile</label>
+          <input type="text" id="username" placeholder="Enter username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block" id="login-btn">Login</button>
+      </form>
+
+      <div class="login-links">
+        <a href="#" id="forgot-link">Forgot Password?</a>
+      </div>
+      <div class="login-footer">The Jojan | Default login: admin / admin123</div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (getToken()) {
+      window.location.href = "/dashboard.html";
+    }
+
+    const form = document.getElementById("login-form");
+    const errorBox = document.getElementById("error-box");
+    const btn = document.getElementById("login-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.style.display = "none";
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      btn.disabled = true;
+      btn.textContent = "Logging in...";
+      try {
+        const data = await apiPost("/api/auth/login", { username, password });
+        setSession(data.token, data.user);
+        window.location.href = "/dashboard.html";
+      } catch (err) {
+        errorBox.textContent = err.message || "Login failed";
+        errorBox.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Login";
+      }
+    });
+
+    document.getElementById("forgot-link").addEventListener("click", (e) => {
+      e.preventDefault();
+      alert("Please contact your administrator to reset your password.\n(Default admin login: admin / admin123)");
+    });
+  </script>
+  <script>
+    lucide.createIcons();
+</script>
+</body>
+</html>
