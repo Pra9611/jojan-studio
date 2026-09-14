@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # Backend Python API Service
+  backend:
+    build:
+      context: .
+      dockerfile ./backend/Dockerfile
+    container_name: jojan_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/jojan.db:/app/jojan.db  # Database data save rehne ke liye
+    restart: always
+
+  # Frontend Nginx Web Service
+  frontend:
+    build: ./frontend
+    container_name: jojan_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
